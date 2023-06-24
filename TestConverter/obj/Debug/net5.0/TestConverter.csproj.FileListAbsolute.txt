@@ -1,0 +1,5 @@
+C:\Users\Ixion\source\repos\TestConverter\TestConverter\obj\Debug\net5.0\TestConverter.csproj.AssemblyReference.cache
+C:\Users\Ixion\source\repos\TestConverter\TestConverter\obj\Debug\net5.0\TestConverter.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Ixion\source\repos\TestConverter\TestConverter\obj\Debug\net5.0\TestConverter.AssemblyInfoInputs.cache
+C:\Users\Ixion\source\repos\TestConverter\TestConverter\obj\Debug\net5.0\TestConverter.AssemblyInfo.cs
+C:\Users\Ixion\source\repos\TestConverter\TestConverter\obj\Debug\net5.0\TestConverter.csproj.CoreCompileInputs.cache
