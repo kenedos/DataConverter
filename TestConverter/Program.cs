@@ -1,15 +1,24 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Xml.Linq;
+using Newtonsoft.Json.Linq;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace TestConverter
 {
+   
     class Program
     {
         static void Main(string[] args)
         {
+            Trace.Listeners.Add(new ConsoleTraceListener());
+            Trace.AutoFlush = true;
+
+            
+
             MonsterSpawnDb.Load();
 
             // Create mob spawns
@@ -20,101 +29,132 @@ namespace TestConverter
                     continue;
                 }
 
+                if (String.IsNullOrEmpty(map.MapName))
+                {
+                    throw new Exception("Map with empty name found");
+                }
+
                 if (MonsterSpawnDb.Entries.ContainsKey(map.ClassName))
                 {
+                    var entries = MonsterSpawnDb.Entries[map.ClassName].OrderBy(p => p.GenType);
+
                     // Creates mob spawns string
                     string mobs = "";
 
-                    // ---------------- Monster Properties ---------------------
-
-                    // If there is at least one monster stat property override for this map
-                    if (MonsterSpawnDb.Entries[map.ClassName].Any(data => data.MonsterStat != null))
+                    // No monsters or crystals in this map, skip this map.
+                    if ( (!entries.Any(data => data.Faction == "RootCrystal")) &&
+                        (!entries.Any(data => data.Faction == "Monster")) )
                     {
-                        mobs += "\t\t// Property Overrides\r\n";
+                        continue;
                     }
 
-                    // Add mob property overrides
-                    List<string> addedMobClasses = new List<string>();
-                    foreach (var mob in MonsterSpawnDb.Entries[map.ClassName])
-                    {
-                        if (String.Equals(mob.Faction, "Monster", StringComparison.OrdinalIgnoreCase))
-                        {
-                            if (mob.MonsterStat != null && !addedMobClasses.Contains(mob.ClassName))
-                            {
-                                mobs += "\t\tAddPropertyOverrides(\"" + map.ClassName + "\", MonsterId." + ToTitleCase(mob.ClassName) + ", Properties(" +
-                                    "\"MHP\", " + mob.MonsterStat.MHP + ", " +
-                                    "\"MINPATK\", " + mob.MonsterStat.MINPATK + ", " +
-                                    "\"MAXPATK\", " + mob.MonsterStat.MAXPATK + ", " +
-                                    "\"MINMATK\", " + mob.MonsterStat.MINMATK + ", " +
-                                    "\"MAXMATK\", " + mob.MonsterStat.MAXMATK + ", " +
-                                    "\"DEF\", " + mob.MonsterStat.DEF + ", " +
-                                    "\"MDEF\", " + mob.MonsterStat.MDEF + "));" + "\r\n";
+                    // ---------------- Monster Properties ---------------------
 
-                                addedMobClasses.Add(mob.ClassName);
-                            }
+                            // If there is at least one monster stat property override for this map
+                    if (map.MonsterStat != null)
+                    {
+                        mobs += "\t\t// Property Overrides -------------------------------\r\n\r\n";
+                    }
+
+                    if (map.MonsterStat != null)
+                    {
+                        var statList = map.MonsterStat;
+                        // Add mob property overrides
+                        foreach (var stat in statList)
+                        {
+                            mobs += "\t\tAddPropertyOverrides(\"" + map.ClassName + "\", MonsterId." + ToTitleCase(stat.ClassName) + ", Properties(" +
+                                "\"MHP\", " + stat.MHP + ", " +
+                                "\"MINPATK\", " + stat.MINPATK + ", " +
+                                "\"MAXPATK\", " + stat.MAXPATK + ", " +
+                                "\"MINMATK\", " + stat.MINMATK + ", " +
+                                "\"MAXMATK\", " + stat.MAXMATK + ", " +
+                                "\"DEF\", " + stat.DEF + ", " +
+                                "\"MDEF\", " + stat.MDEF + "));" + "\r\n";
                         }
                     }
 
-                    // ---------------- Monster Populations ---------------------
+                    // ---------------- Monster Spawners ---------------------
 
                     // If there is at least one monster in this map
-                    if (MonsterSpawnDb.Entries[map.ClassName].Any(data => data.Faction == "Monster"))
+                    if (entries.Any(data => data.Faction == "Monster"))
                     {
-                        mobs += "\r\n\t\t// Monster Populations\r\n";
+                        mobs += "\r\n\t\t// Monster Spawners ---------------------------------\r\n\r\n";
                     }
 
                     // Add monster populations
-                    List<string> addedMobPopulations = new List<string>();
-                    foreach (var mob in MonsterSpawnDb.Entries[map.ClassName])
+                    List<int> addedMobGenTypes = new List<int>();
+                    int i = 1;
+                    foreach (var mob in entries)
                     {
                         if (String.Equals(mob.Faction, "Monster", StringComparison.OrdinalIgnoreCase) || String.Equals(mob.Faction, "RootCrystal", StringComparison.OrdinalIgnoreCase))
                         {
-                            if (!addedMobPopulations.Contains(mob.PopulationCustomName))
+                            if (!addedMobGenTypes.Contains(mob.GenType))
                             {
-                                mobs += "\t\tAddMonsterPopulation(\"" + map.ClassName + "\", \"" + mob.PopulationCustomName + "\", " + mob.MaxPop + ");" + "\r\n";
+                                string tendency = "TendencyType.Peaceful";
+                                if (mob.Tendency.Equals("Attack", StringComparison.OrdinalIgnoreCase))
+                                    tendency = "TendencyType.Aggressive";
+                                var minPop = (int)Math.Ceiling(mob.MaxPop * 3.0 / 4.0);
+                                string identifier = map.ClassName + "." + "Id" + i.ToString();
+                                mobs += "\t\tAddSpawner(\"" + identifier + "\", MonsterId." + ToTitleCase(mob.ClassName) + ", " + minPop + ", " + mob.MaxPop + ", TimeSpan.FromMilliseconds(" + mob.RespawnTime + "), " + tendency + ");" + "\r\n";
 
-                                addedMobPopulations.Add(mob.PopulationCustomName);
+                                i++;
+                                mob.Identifier = identifier;
+                                addedMobGenTypes.Add(mob.GenType);
                             } 
                         }
                     }
 
-                    // ---------------- Monster Spawns ---------------------
-
-                    // If there is at least one RootCrystal in this map
-                    if (MonsterSpawnDb.Entries[map.ClassName].Any(data => data.Faction == "RootCrystal"))
+                    /// Fills identifiers (dumb way)
+                    foreach (var mob in entries)
                     {
-                        mobs += "\r\n\t\t// RootCrystal Spawners\r\n";
-                    }
-
-                    foreach (var mobPopulation in addedMobPopulations)
-                    {
-                        foreach (var mob in MonsterSpawnDb.Entries[map.ClassName])
+                        foreach (var mob2 in entries)
                         {
-                            if (String.Equals(mob.Faction, "RootCrystal", StringComparison.OrdinalIgnoreCase) && string.Equals(mob.PopulationCustomName, mobPopulation))
+                            if (mob.Identifier == null)
                             {
-                                mobs += "\t\tAddSpawner(MonsterId." + ToTitleCase(mob.ClassName) + ", \"" + mob.PopulationCustomName + "\", TimeSpan.FromMilliseconds(" + mob.RespawnTime + "), \"" + map.ClassName + "\", " + "Spot(" + mob.X + ", " + mob.Z + ", " + mob.GenRange + "));" + "\r\n";
+                                if ( (mob.GenType == mob2.GenType) && (mob.ClassName == mob2.ClassName) && (mob.Map == mob2.Map) )
+                                {
+                                    mob.Identifier = mob2.Identifier;
+                                }
                             }
                         }
                     }
+
+                    // ---------------- Monster Spawn Points ---------------------
 
                     // If there is at least one monster in this map
-                    if (MonsterSpawnDb.Entries[map.ClassName].Any(data => data.Faction == "Monster"))
+                    if (entries.Any(data => data.Faction == "Monster"))
                     {
-                        mobs += "\r\n\t\t// Monster Spawners\r\n";
+                        mobs += "\r\n\t\t// Monster Spawn Points -----------------------------\r\n";
                     }
 
-                    // Add mob spawners
-                    foreach (var mobPopulation in addedMobPopulations)
+                    // mobs
+                    int currentGentype = -1;
+                    bool set = false;
+                    foreach (var mob in entries)
                     {
-                        foreach (var mob in MonsterSpawnDb.Entries[map.ClassName])
+                        foreach (var genType in addedMobGenTypes)
                         {
-                            if (String.Equals(mob.Faction, "Monster", StringComparison.OrdinalIgnoreCase) && string.Equals(mob.PopulationCustomName, mobPopulation))
+                            if ((String.Equals(mob.Faction, "Monster", StringComparison.OrdinalIgnoreCase) || String.Equals(mob.Faction, "RootCrystal", StringComparison.OrdinalIgnoreCase)) && (genType == mob.GenType))
                             {
-                                mobs += "\t\tAddSpawner(MonsterId." + ToTitleCase(mob.ClassName) + ", \"" + mob.PopulationCustomName + "\", TimeSpan.FromMilliseconds(" + mob.RespawnTime + "), \"" + map.ClassName + "\", " + "Spot(" + mob.X + ", " + mob.Z + ", " + mob.GenRange + "));" + "\r\n";
+                                if (mob.MonsterId == -1)
+                                {
+                                    throw new Exception("Invalid monster id found");
+                                }
+
+                                if (currentGentype != mob.GenType)
+                                {
+                                    mobs += "\r\n\t\t// '" + ToTitleCase(mob.ClassName) + "' GenType " + genType.ToString() +  " Spawn Points\r\n";
+                                    currentGentype = mob.GenType;
+                                }
+                                var X = mob.X;
+                                set = true;
+                                mobs += "\t\tAddSpawnPoint(\"" + mob.Identifier + "\", \"" + map.ClassName + "\", " + "Rectangle(" + mob.X + ", " + mob.Z + ", " + mob.GenRange + "));" + "\r\n";
                             }
                         }
                     }
-                    
+                    if (set)
+                        mobs = mobs.Substring(0, mobs.Length - 2);
+
                     // Sets the type of map by some arbitraty naming convention
                     string type;
                     if (map.ClassName.Contains("f_") && (!map.ClassName.Contains("GuildColony")))
@@ -151,13 +191,31 @@ namespace TestConverter
                     // Write to file
                     using (StreamWriter writer = new StreamWriter(filePath))
                     {
-                        MonsterSpawnDb.AddMeliaMobSpawners(writer, map.ClassName, map.ClassName, mobs);
+                        MonsterSpawnDb.AddMeliaMobSpawners(writer, map.ClassName, map.MapName, mobs);
                     }
 
                 }
             }
         }
 
+        public static (double, double)[] GetSquareCorners(double center_x, double center_y, double range, double direction)
+        {
+            (double, double)[] corners = new (double, double)[4];
+
+            // Convert the direction angle to radians
+            double angleRad = direction * Math.PI / 180;
+
+            // Calculate the coordinates of the corners
+            double halfDiagonal = range * Math.Sqrt(2) / 2;
+            double cornerAngleRad = Math.Atan2(halfDiagonal, halfDiagonal) + angleRad;
+
+            corners[0] = (center_x + range * Math.Cos(cornerAngleRad), center_y + range * Math.Sin(cornerAngleRad)); // Top-left
+            corners[1] = (center_x + range * Math.Cos(cornerAngleRad + Math.PI / 2), center_y + range * Math.Sin(cornerAngleRad + Math.PI / 2)); // Top-right
+            corners[2] = (center_x + range * Math.Cos(cornerAngleRad + Math.PI), center_y + range * Math.Sin(cornerAngleRad + Math.PI)); // Bottom-left
+            corners[3] = (center_x + range * Math.Cos(cornerAngleRad + Math.PI * 3 / 2), center_y + range * Math.Sin(cornerAngleRad + Math.PI * 3 / 2)); // Bottom-right
+
+            return corners;
+        }
         public static string ToTitleCase(string input)
         {
             string[] words = input.Split('_');

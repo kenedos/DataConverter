@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Ixion\\source\\repos\\TestConverter\\TestConverter\\TestConverter.csproj": {}
+    "C:\\Users\\Ixion\\source\\repos\\DataConverter\\TestConverter\\TestConverter.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Ixion\\source\\repos\\TestConverter\\TestConverter\\TestConverter.csproj": {
+    "C:\\Users\\Ixion\\source\\repos\\DataConverter\\TestConverter\\TestConverter.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Ixion\\source\\repos\\TestConverter\\TestConverter\\TestConverter.csproj",
+        "projectUniqueName": "C:\\Users\\Ixion\\source\\repos\\DataConverter\\TestConverter\\TestConverter.csproj",
         "projectName": "TestConverter",
-        "projectPath": "C:\\Users\\Ixion\\source\\repos\\TestConverter\\TestConverter\\TestConverter.csproj",
+        "projectPath": "C:\\Users\\Ixion\\source\\repos\\DataConverter\\TestConverter\\TestConverter.csproj",
         "packagesPath": "C:\\Users\\Ixion\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Ixion\\source\\repos\\TestConverter\\TestConverter\\obj\\",
+        "outputPath": "C:\\Users\\Ixion\\source\\repos\\DataConverter\\TestConverter\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Ixion\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -39,6 +39,12 @@
       "frameworks": {
         "net6.0": {
           "targetAlias": "net6.0",
+          "dependencies": {
+            "Newtonsoft.Json": {
+              "target": "Package",
+              "version": "[13.0.3, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",

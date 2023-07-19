@@ -5,18 +5,33 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Globalization;
+using Newtonsoft.Json.Linq;
 
 namespace TestConverter
 {
+    public class MapName
+    {
+        public string ClassName { get; set; }
+        public string Name { get; set; }
+    }
+
+    public class MonsterId
+    {
+        public string ClassName { get; set; }
+        public int Id { get; set; }
+    }
     public class MapData
     {
         public string ClassName { get; set; }
         public string MapType { get; set; }
+        public string MapName { get; set; }
+        public List<MonsterStat>? MonsterStat { get; set; } = null;
     }
 
     public class MonsterStat
     {
         public int ClassID { get; set; }
+        public string ClassName { get; set; }
         public int MHP { get; set; }
         public int MINPATK { get; set; }
         public int MAXPATK { get; set; }
@@ -77,12 +92,14 @@ namespace TestConverter
 
     public class MonsterSpawnData
     {
+        public int MonsterId { get; set; }
         public int ClassID { get; set; }
         public string ClassName { get; set; }
         public float X { get; set; }
         public float Y { get; set; }
         public float Z { get; set; }
         public string Map { get; set; }
+        public string Identifier { get; set; }
         public int Direction { get; set; }
         public string Name { get; set; }
         public string Dialog { get; set; }
@@ -90,6 +107,7 @@ namespace TestConverter
         public string Leave { get; set; }
         public float Range { get; set; }
         public int GenRange { get; set; }
+        public int GenType { get; set; }
         public int RespawnTime { get; set; }
         public int MaxPop { get; set; }
         public string ArgStr1 { get; set; }
@@ -97,9 +115,7 @@ namespace TestConverter
         public string ArgStr3 { get; set; }
         public string Faction { get; set; }
         public string Tendency { get; set; }
-        public string PopulationCustomName { get; set; }
         public int HideNPC { get; set; } = -1;
-        public MonsterStat? MonsterStat { get; set; } = null;
     }
 
     public class MonsterDialogData
@@ -210,11 +226,54 @@ namespace TestConverter
             return string.Concat(words);
         }
 
+        /// <summary>
+        /// Converts a given string to camel case
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
+        public static string ToCamelCase(string input)
+        {
+            if (string.IsNullOrEmpty(input))
+                return input;
+
+            TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
+            string[] words = input.Split(new[] { ' ', '_' }, StringSplitOptions.RemoveEmptyEntries);
+
+            for (int i = 0; i < words.Length; i++)
+            {
+                string word = words[i];
+                if (i == 0)
+                {
+                    // Convert the first word to lowercase
+                    words[i] = word.ToLower();
+                }
+                else
+                {
+                    // Convert subsequent words to title case
+                    words[i] = textInfo.ToTitleCase(word.ToLower());
+                }
+            }
+
+            return string.Concat(words);
+        }
+
         public static void Load()
         {
+            // Read "map.txt"
+            string mapdb = "Data/maps.txt";
+            var mapDBNames = GetMapsFromJsonFile(mapdb);
+
+            string monsterdb = "Data/monsters.txt";
+            var monsterDBNames = GetMonstersFromJsonFile(monsterdb);
+
             // Read "map.ies"
             if (!TryGetClasses("map.ies", out var mapClsList))
                 throw new Exception("Class list not found.");
+
+            // Read "monster.ies"
+            if (!TryGetClasses("map.ies", out var monsterDataList))
+                throw new Exception("Class list not found.");
+
 
             // Read "hidenpc.ies"
             if (!TryGetClasses("hidenpc.ies", out var hideNpcClsList))
@@ -254,7 +313,7 @@ namespace TestConverter
                 int usedGenTypesCounter = 1;
                 m.ClassName = mapCls.GetString("ClassName");
                 m.MapType = mapCls.GetString("MapType");
-                MapEntries.Add(m);
+                m.MapName = mapDBNames.FirstOrDefault(p => p.ClassName == m.ClassName)?.Name ?? "";
 
                 // Read maps anchor file
                 if (!TryGetClasses("Anchor_" + mapCls.GetString("ClassName") + ".ies", out var anchorClsList))
@@ -268,8 +327,48 @@ namespace TestConverter
                     throw new Exception("Class list not found.");
 
                 // Read maps monster status file
-                if (!TryGetClasses("field_monster_status_" + mapCls.GetString("ClassName") + ".ies", out var monsterStatClsList))
+                string stat_filename = mapCls.GetString("ClassName");
+                if (mapCls.GetString("ClassName").Equals("ep13_2_d_prison_1", StringComparison.OrdinalIgnoreCase) ||
+                    mapCls.GetString("ClassName").Equals("ep13_2_d_prison_2", StringComparison.OrdinalIgnoreCase) ||
+                    mapCls.GetString("ClassName").Equals("ep13_2_d_prison_3", StringComparison.OrdinalIgnoreCase))
+                {
+                    stat_filename = "ep13_" + stat_filename;
+                }
+                if (!TryGetClasses("field_monster_status_" + stat_filename + ".ies", out var monsterStatClsList))
                     Trace.TraceWarning("MobStat file not found for map: {0}", mapCls.GetString("ClassName"));
+
+                // Gets monster stat for map
+                if (monsterStatClsList != null)
+                {
+                    foreach (var monStatCls in monsterStatClsList)
+                    {
+                        MonsterStat ms = new MonsterStat();
+                        ms.ClassID = monStatCls.GetInt("ClassID");
+                        ms.ClassName = monStatCls.GetString("ClassName");
+                        ms.MHP = monStatCls.GetInt("MHP");
+                        ms.DEF = monStatCls.GetInt("DEF");
+                        ms.MDEF = monStatCls.GetInt("MDEF");
+                        ms.MINPATK = monStatCls.GetInt("MINPATK");
+                        ms.MAXPATK = monStatCls.GetInt("MAXPATK");
+                        ms.MINMATK = monStatCls.GetInt("MINMATK");
+                        ms.MAXMATK = monStatCls.GetInt("MAXMATK");
+
+                        if (ms.ClassName.Equals("Nfroholder_Mage", StringComparison.OrdinalIgnoreCase))
+                        {
+                            ms.ClassName = "Infroholder_Mage";
+                        }
+
+                        if (m.MonsterStat == null)
+                        {
+                            m.MonsterStat = new List<MonsterStat>();
+                        }
+
+                        m.MonsterStat.Add(ms);
+
+                    }
+                }
+
+                MapEntries.Add(m);
 
                 // Iterate over anchor
                 foreach (var anchorCls in anchorClsList)
@@ -310,8 +409,7 @@ namespace TestConverter
                     var data = new MonsterSpawnData();
 
                     data.Name = genTypeCls.GetString("Name");
-                    if (data.Name == "UnvisibleName")
-                        data.Name = " ";
+                    data.GenType = genType;
                     data.ClassName = genTypeCls.GetString("ClassType");
                     data.Direction = anchorCls.GetInt("Direction") + 90;
                     data.Map = mapCls.GetString("ClassName");
@@ -371,8 +469,21 @@ namespace TestConverter
                     {
                         continue;
                     }
+                    else if (data.ClassName.Contains("Hidden", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+                    else if (data.Name.Equals("UnvisibleName", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+                    else if (data.ClassName.Contains("Npc", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
 
                     // Builds population name string for monster types
+                    /*
                     if (data.Faction == "Monster" || data.Faction == "RootCrystal")
                     {
                         if (!usedGenTypes.Keys.Contains(genTypeCls.GetInt("GenType")))
@@ -380,7 +491,15 @@ namespace TestConverter
                             usedGenTypes.Add(genTypeCls.GetInt("GenType"), usedGenTypesCounter);
                             usedGenTypesCounter++;
                         }
-                        data.PopulationCustomName = "population_" + genTypeCls.GetString("ClassType").ToLower() + "_" + usedGenTypes[genTypeCls.GetInt("GenType")].ToString();
+                        // usedGenTypes[genTypeCls.GetInt("GenType")].ToString()
+                        // + "." + genTypeCls.GetString("ClassType").ToLower().Trim('_') + "." + data.MaxPop.ToString()
+                        data.GeneratorName = data.Map + "." + "Id" + usedGenTypes[genTypeCls.GetInt("GenType")].ToString();
+                    }
+                    */
+
+                    if (data.Faction == "Monster" || data.Faction == "RootCrystal")
+                    {
+                        data.MonsterId = monsterDBNames.FirstOrDefault(p => p.ClassName == data.ClassName)?.Id ?? -1;
                     }
                     
                     if (!string.IsNullOrWhiteSpace(data.Dialog))
@@ -408,28 +527,6 @@ namespace TestConverter
                         MeliaWarpEntries.Add(data.Dialog, sb.ToString());
                     }
 
-                    if (monsterStatClsList != null)
-                    {
-                        bool monsterHasStat = monsterStatClsList.Any(a => a.GetString("ClassName") == genTypeCls.GetString("ClassType"));
-
-                        if (monsterHasStat)
-                        {
-                            var monStatCls = monsterStatClsList.FirstOrDefault(a => a.GetString("ClassName") == genTypeCls.GetString("ClassType"));
-
-                            MonsterStat ms = new MonsterStat();
-                            ms.ClassID = monStatCls.GetInt("ClassID");
-                            ms.MHP = monStatCls.GetInt("MHP");
-                            ms.DEF = monStatCls.GetInt("DEF");
-                            ms.MDEF = monStatCls.GetInt("MDEF");
-                            ms.MINPATK = monStatCls.GetInt("MINPATK");
-                            ms.MAXPATK = monStatCls.GetInt("MAXPATK");
-                            ms.MINMATK = monStatCls.GetInt("MINMATK");
-                            ms.MAXMATK = monStatCls.GetInt("MAXMATK");
-
-                            data.MonsterStat = ms;
-                        }
-                    }
-                    
                     if (!Entries.TryGetValue(mapCls.GetString("ClassName"), out var dataList))
                         Entries[mapCls.GetString("ClassName")] = dataList = new List<MonsterSpawnData>();
 
@@ -467,6 +564,48 @@ namespace TestConverter
                 sw.WriteLine("\t}");
                 sw.WriteLine("}");
             }
+        }
+
+        public static MapName[] GetMapsFromJsonFile(string filePath)
+        {
+            string fileContents = File.ReadAllText(filePath);
+
+            // Parse the JSON content
+            JArray jsonArray = JArray.Parse(fileContents);
+
+            // Extract the values under the key 'name'
+            MapName[] names = new MapName[jsonArray.Count];
+            for (int i = 0; i < jsonArray.Count; i++)
+            {
+                names[i] = new MapName
+                {
+                    Name = jsonArray[i]["name"].ToString(),
+                    ClassName = jsonArray[i]["className"].ToString()
+                };
+            }
+
+            return names;
+        }
+
+        public static MonsterId[] GetMonstersFromJsonFile(string filePath)
+        {
+            string fileContents = File.ReadAllText(filePath);
+
+            // Parse the JSON content
+            JArray jsonArray = JArray.Parse(fileContents);
+
+            // Extract the values under the key 'name'
+            MonsterId[] names = new MonsterId[jsonArray.Count];
+            for (int i = 0; i < jsonArray.Count; i++)
+            {
+                names[i] = new MonsterId
+                {
+                    Id = ((int)jsonArray[i]["monsterId"]),
+                    ClassName = jsonArray[i]["className"].ToString()
+                };
+            }
+
+            return names;
         }
 
         public static void ExportTriggersCSharpMelia(string folderPath)
@@ -514,14 +653,15 @@ namespace TestConverter
         {
             var customMapName = ToPascalCase(className);
             sb.WriteLine("//--- Melia Script -----------------------------------------------------------");
-            sb.WriteLine("// " + mapName);
+            sb.WriteLine("// " + className);
             sb.WriteLine("//");
             sb.WriteLine("//--- Description -----------------------------------------------------------");
-            sb.WriteLine("// Sets up the " + mapName + " mobs.");
+            sb.WriteLine("// Sets up mobs for '" + mapName + "' map.");
             sb.WriteLine("//---------------------------------------------------------------------------");
             sb.WriteLine();
             sb.WriteLine("using System;");
             sb.WriteLine("using Melia.Zone.Scripting;");
+            sb.WriteLine("using Melia.Shared.Tos.Const;");
             sb.WriteLine("using static Melia.Zone.Scripting.Shortcuts;");
             sb.WriteLine();
             sb.WriteLine("public class " + customMapName + "MobScript : GeneralScript");

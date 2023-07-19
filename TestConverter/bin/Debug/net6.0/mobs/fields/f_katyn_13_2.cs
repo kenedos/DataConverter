@@ -2,11 +2,12 @@
 // f_katyn_13_2
 //
 //--- Description -----------------------------------------------------------
-// Sets up the f_katyn_13_2 mobs.
+// Sets up mobs for 'Secret Room' map.
 //---------------------------------------------------------------------------
 
 using System;
 using Melia.Zone.Scripting;
+using Melia.Shared.Tos.Const;
 using static Melia.Zone.Scripting.Shortcuts;
 
 public class FKatyn132MobScript : GeneralScript
@@ -14,35 +15,47 @@ public class FKatyn132MobScript : GeneralScript
 	public override void Load()
 	{
 
-		// Monster Populations
-		AddMonsterPopulation("f_katyn_13_2", "population_swordmaster_1", 1);
-		AddMonsterPopulation("f_katyn_13_2", "population_archermaster_2", 1);
-		AddMonsterPopulation("f_katyn_13_2", "population_wizardmaster_3", 1);
-		AddMonsterPopulation("f_katyn_13_2", "population_npc_healer_4", 1);
-		AddMonsterPopulation("f_katyn_13_2", "population_mushroom_boy_red_5", 40);
-		AddMonsterPopulation("f_katyn_13_2", "population_mushroom_ent_6", 20);
-		AddMonsterPopulation("f_katyn_13_2", "population_mushroom_boy_red_7", 3);
-		AddMonsterPopulation("f_katyn_13_2", "population_mushroom_boy_red_8", 25);
+		// Monster Spawners ---------------------------------
 
-		// Monster Spawners
-		AddSpawner(MonsterId.Swordmaster, "population_swordmaster_1", TimeSpan.FromMilliseconds(60000), "f_katyn_13_2", Spot(-403, -1878.91, 20));
-		AddSpawner(MonsterId.Archermaster, "population_archermaster_2", TimeSpan.FromMilliseconds(60000), "f_katyn_13_2", Spot(-313.73, -2113.53, 20));
-		AddSpawner(MonsterId.Wizardmaster, "population_wizardmaster_3", TimeSpan.FromMilliseconds(60000), "f_katyn_13_2", Spot(-312.74, -1747.03, 20));
-		AddSpawner(MonsterId.Npc_Healer, "population_npc_healer_4", TimeSpan.FromMilliseconds(60000), "f_katyn_13_2", Spot(-192.13, -2135.66, 20));
-		AddSpawner(MonsterId.Mushroom_Boy_Red, "population_mushroom_boy_red_5", TimeSpan.FromMilliseconds(15000), "f_katyn_13_2", Spot(-162.46576, -1998.9631, 9999));
-		AddSpawner(MonsterId.Mushroom_Ent, "population_mushroom_ent_6", TimeSpan.FromMilliseconds(15000), "f_katyn_13_2", Spot(-1293.4271, 1492.9653, 9999));
-		AddSpawner(MonsterId.Mushroom_Boy_Red, "population_mushroom_boy_red_7", TimeSpan.FromMilliseconds(20000), "f_katyn_13_2", Spot(-227.26, -1965.17, 300));
-		AddSpawner(MonsterId.Mushroom_Boy_Red, "population_mushroom_boy_red_8", TimeSpan.FromMilliseconds(5000), "f_katyn_13_2", Spot(-216.52788, -1713.0366, 30));
-		AddSpawner(MonsterId.Mushroom_Boy_Red, "population_mushroom_boy_red_8", TimeSpan.FromMilliseconds(5000), "f_katyn_13_2", Spot(-327.94702, -1848.8572, 30));
-		AddSpawner(MonsterId.Mushroom_Boy_Red, "population_mushroom_boy_red_8", TimeSpan.FromMilliseconds(5000), "f_katyn_13_2", Spot(-232.98715, -2046.5466, 30));
-		AddSpawner(MonsterId.Mushroom_Boy_Red, "population_mushroom_boy_red_8", TimeSpan.FromMilliseconds(5000), "f_katyn_13_2", Spot(-70.585236, -2023.15, 30));
-		AddSpawner(MonsterId.Mushroom_Boy_Red, "population_mushroom_boy_red_8", TimeSpan.FromMilliseconds(5000), "f_katyn_13_2", Spot(-110.33405, -1855.1942, 30));
-		AddSpawner(MonsterId.Mushroom_Boy_Red, "population_mushroom_boy_red_8", TimeSpan.FromMilliseconds(5000), "f_katyn_13_2", Spot(-19.71203, -1690.4005, 30));
-		AddSpawner(MonsterId.Mushroom_Boy_Red, "population_mushroom_boy_red_8", TimeSpan.FromMilliseconds(5000), "f_katyn_13_2", Spot(55.91324, -1930.4796, 30));
-		AddSpawner(MonsterId.Mushroom_Boy_Red, "population_mushroom_boy_red_8", TimeSpan.FromMilliseconds(5000), "f_katyn_13_2", Spot(-360.7234, -2090.9502, 30));
-		AddSpawner(MonsterId.Mushroom_Boy_Red, "population_mushroom_boy_red_8", TimeSpan.FromMilliseconds(5000), "f_katyn_13_2", Spot(-595.2442, -2054.4976, 30));
-		AddSpawner(MonsterId.Mushroom_Boy_Red, "population_mushroom_boy_red_8", TimeSpan.FromMilliseconds(5000), "f_katyn_13_2", Spot(-54.833138, -1476.0273, 30));
-		AddSpawner(MonsterId.Mushroom_Boy_Red, "population_mushroom_boy_red_8", TimeSpan.FromMilliseconds(5000), "f_katyn_13_2", Spot(-40.26753, -1268.6481, 30));
+		AddSpawner("f_katyn_13_2.Id1", MonsterId.Mushroom_Boy_Red, 30, 40, TimeSpan.FromMilliseconds(15000), TendencyType.Peaceful);
+		AddSpawner("f_katyn_13_2.Id2", MonsterId.Mushroom_Ent, 15, 20, TimeSpan.FromMilliseconds(15000), TendencyType.Peaceful);
+		AddSpawner("f_katyn_13_2.Id3", MonsterId.Mushroom_Boy_Red, 3, 3, TimeSpan.FromMilliseconds(20000), TendencyType.Peaceful);
+		AddSpawner("f_katyn_13_2.Id4", MonsterId.Swordmaster, 1, 1, TimeSpan.FromMilliseconds(60000), TendencyType.Peaceful);
+		AddSpawner("f_katyn_13_2.Id5", MonsterId.Archermaster, 1, 1, TimeSpan.FromMilliseconds(60000), TendencyType.Peaceful);
+		AddSpawner("f_katyn_13_2.Id6", MonsterId.Wizardmaster, 1, 1, TimeSpan.FromMilliseconds(60000), TendencyType.Peaceful);
+		AddSpawner("f_katyn_13_2.Id7", MonsterId.Mushroom_Boy_Red, 19, 25, TimeSpan.FromMilliseconds(5000), TendencyType.Peaceful);
 
+		// Monster Spawn Points -----------------------------
+
+		// 'Mushroom_Boy_Red' GenType 102 Spawn Points
+		AddSpawnPoint("f_katyn_13_2.Id1", "f_katyn_13_2", Rectangle(-162.46576, -1998.9631, 9999));
+
+		// 'Mushroom_Ent' GenType 105 Spawn Points
+		AddSpawnPoint("f_katyn_13_2.Id2", "f_katyn_13_2", Rectangle(-1293.4271, 1492.9653, 9999));
+
+		// 'Mushroom_Boy_Red' GenType 106 Spawn Points
+		AddSpawnPoint("f_katyn_13_2.Id3", "f_katyn_13_2", Rectangle(-227.26, -1965.17, 300));
+
+		// 'Swordmaster' GenType 202 Spawn Points
+		AddSpawnPoint("f_katyn_13_2.Id4", "f_katyn_13_2", Rectangle(-403, -1878.91, 20));
+
+		// 'Archermaster' GenType 203 Spawn Points
+		AddSpawnPoint("f_katyn_13_2.Id5", "f_katyn_13_2", Rectangle(-313.73, -2113.53, 20));
+
+		// 'Wizardmaster' GenType 204 Spawn Points
+		AddSpawnPoint("f_katyn_13_2.Id6", "f_katyn_13_2", Rectangle(-312.74, -1747.03, 20));
+
+		// 'Mushroom_Boy_Red' GenType 206 Spawn Points
+		AddSpawnPoint("f_katyn_13_2.Id7", "f_katyn_13_2", Rectangle(-216.52788, -1713.0366, 30));
+		AddSpawnPoint("f_katyn_13_2.Id7", "f_katyn_13_2", Rectangle(-327.94702, -1848.8572, 30));
+		AddSpawnPoint("f_katyn_13_2.Id7", "f_katyn_13_2", Rectangle(-232.98715, -2046.5466, 30));
+		AddSpawnPoint("f_katyn_13_2.Id7", "f_katyn_13_2", Rectangle(-70.585236, -2023.15, 30));
+		AddSpawnPoint("f_katyn_13_2.Id7", "f_katyn_13_2", Rectangle(-110.33405, -1855.1942, 30));
+		AddSpawnPoint("f_katyn_13_2.Id7", "f_katyn_13_2", Rectangle(-19.71203, -1690.4005, 30));
+		AddSpawnPoint("f_katyn_13_2.Id7", "f_katyn_13_2", Rectangle(55.91324, -1930.4796, 30));
+		AddSpawnPoint("f_katyn_13_2.Id7", "f_katyn_13_2", Rectangle(-360.7234, -2090.9502, 30));
+		AddSpawnPoint("f_katyn_13_2.Id7", "f_katyn_13_2", Rectangle(-595.2442, -2054.4976, 30));
+		AddSpawnPoint("f_katyn_13_2.Id7", "f_katyn_13_2", Rectangle(-54.833138, -1476.0273, 30));
+		AddSpawnPoint("f_katyn_13_2.Id7", "f_katyn_13_2", Rectangle(-40.26753, -1268.6481, 30));
 	}
 }
